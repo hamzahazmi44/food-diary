@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Food Diary</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f6b45"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Food Diary">
+<style>
+:root{--bg:#fbf8f1;--card:#fff;--ink:#1f2a24;--mute:#55605a;--line:#c9d1c6;--green:#1f6b45;--ong:#fff;--food:#e8f3ea;--drink:#e6f0f8;--today:#fff3c4;--del:#a3261c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15191a;--card:#1f2527;--ink:#f2f4f1;--mute:#b5beb9;--line:#44504b;--green:#6fcf97;--ong:#102017;--food:#1d3326;--drink:#1b2e3d;--today:#4a4220;--del:#ff8a80}}
+:root[data-theme="dark"]{--bg:#15191a;--card:#1f2527;--ink:#f2f4f1;--mute:#b5beb9;--line:#44504b;--green:#6fcf97;--ong:#102017;--food:#1d3326;--drink:#1b2e3d;--today:#4a4220;--del:#ff8a80}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.4 Georgia,"Times New Roman",serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:30px;margin:4px 0 12px}
+button{font:inherit;cursor:pointer;min-height:56px;border-radius:14px;border:2px solid var(--green);background:var(--card);color:var(--green);padding:8px 16px;font-weight:700}
+button.p{background:var(--green);color:var(--ong)}
+button:focus-visible,input:focus-visible{outline:4px solid #e0a100;outline-offset:2px}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.nav h2{margin:0;font-size:26px;text-align:center;flex:1}
+.nav button{width:64px;font-size:28px;padding:0}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-weight:700;color:var(--mute);font-size:16px;padding:4px 0}
+.day{min-height:64px;padding:4px 2px;border:2px solid var(--line);background:var(--card);color:var(--ink);font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;line-height:1.1}
+.day small{font-size:12px;font-weight:400;color:var(--mute);margin-top:2px}
+.day.today{background:var(--today);border-color:var(--green)}
+.day.has{border-color:var(--green)}
+.blank{visibility:hidden}
+.hint{color:var(--mute);margin:12px 0}
+.top{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.top button{min-width:110px}
+.row{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
+.row.food{background:var(--food)}.row.drink{background:var(--drink)}
+.row b{display:block;margin-bottom:6px}
+.f{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:block;font-size:16px;color:var(--mute)}
+input{font:inherit;width:100%;min-height:56px;padding:8px 12px;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.n{flex:1 1 220px}.c{flex:0 0 130px}
+.del{border-color:var(--del);color:var(--del);flex:0 0 auto}
+.add{display:flex;gap:10px;margin:14px 0}.add button{flex:1}
+.total{font-size:26px;font-weight:700;text-align:center;padding:14px;border:3px solid var(--green);border-radius:14px;margin-top:10px}
+</style></head><body><main><div id="app"></div><button id="inst" class="p" hidden style="width:100%;margin-top:14px">Install this app on my phone</button></main>
+<script>
+var KEY="foodDiary.v1",data={},view=null,cur=new Date();cur.setDate(1);
+try{data=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){data={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+function key(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+function tot(k){return(data[k]||[]).reduce(function(s,e){return s+(+e.cal||0)},0)}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")}
+var M=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function render(){view?day():cal()}
+function cal(){
+ var y=cur.getFullYear(),m=cur.getMonth(),first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate(),t=new Date(),tk=key(t.getFullYear(),t.getMonth(),t.getDate());
+ var h='<h1>My Food Diary</h1><div class="nav"><button aria-label="Previous month" onclick="mv(-1)">&#8249;</button><h2>'+M[m]+" "+y+'</h2><button aria-label="Next month" onclick="mv(1)">&#8250;</button></div><div class="grid">';
+ ["Su","Mo","Tu","We","Th","Fr","Sa"].forEach(function(d){h+='<div class="dow">'+d+"</div>"});
+ for(var i=0;i<first;i++)h+='<div class="blank"></div>';
+ for(var d=1;d<=n;d++){var k=key(y,m,d),c=tot(k),has=(data[k]||[]).length;
+  h+='<button class="day'+(k==tk?" today":"")+(has?" has":"")+'" onclick="openDay(\''+k+'\')" aria-label="'+M[m]+" "+d+(has?", "+c+" calories":"")+'">'+d+(has?"<small>"+c+"</small>":"")+"</button>"}
+ h+='</div><p class="hint">Tap a day to write down what you ate and drank. Numbers under a date are total calories.</p><button onclick="goToday()">Go to today</button>';
+ app.innerHTML=h}
+function mv(x){cur.setMonth(cur.getMonth()+x);render()}
+function goToday(){cur=new Date();cur.setDate(1);render()}
+function openDay(k){view=k;render();scrollTo(0,0)}
+function back(){view=null;render()}
+function day(){
+ var p=view.split("-"),dt=new Date(p[0],p[1]-1,p[2]),list=data[view]||[];
+ var h='<div class="top"><button onclick="back()">&#8249; Back</button></div><h1>'+dt.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})+"</h1>";
+ if(!list.length)h+='<p class="hint">Nothing written yet. Tap a button below to add something.</p>';
+ list.forEach(function(e,i){h+='<div class="row '+e.type+'"><b>'+(e.type=="food"?"Food":"Drink")+'</b><div class="f"><div class="n"><label>What was it?</label><input value="'+esc(e.name)+'" oninput="upd('+i+',\'name\',this.value)" placeholder="'+(e.type=="food"?"e.g. Oatmeal":"e.g. Tea with milk")+'"></div><div class="c"><label>Calories</label><input type="number" inputmode="numeric" min="0" value="'+esc(e.cal)+'" oninput="upd('+i+',\'cal\',this.value)" placeholder="0"></div><button class="del" onclick="rm('+i+')">Remove</button></div></div>'});
+ h+='<div class="add"><button class="p" onclick="add(\'food\')">+ Add food</button><button class="p" onclick="add(\'drink\')">+ Add drink</button></div><div class="total" id="tot">Total: '+tot(view)+' calories</div>';
+ app.innerHTML=h}
+function add(t){(data[view]=data[view]||[]).push({type:t,name:"",cal:""});save();day();var ins=document.querySelectorAll(".n input");ins[ins.length-1].focus()}
+function upd(i,f,v){data[view][i][f]=v;save();document.getElementById("tot").textContent="Total: "+tot(view)+" calories"}
+function rm(i){if(confirm("Remove this item?")){data[view].splice(i,1);if(!data[view].length)delete data[view];save();day()}}
+var app=document.getElementById("app"),dp=null,ib=document.getElementById("inst");
+addEventListener("beforeinstallprompt",function(e){e.preventDefault();dp=e;ib.hidden=false});
+ib.onclick=function(){if(dp){dp.prompt();dp.userChoice.then(function(){dp=null;ib.hidden=true})}};
+addEventListener("appinstalled",function(){ib.hidden=true});
+if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})});
+render();
+</script></body></html>
